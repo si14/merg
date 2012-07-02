@@ -116,7 +116,7 @@ table td {
           opacity: 1;
         }
   td.code, th.code {
-    padding: 14px 15px 16px 25px;
+    padding: 10px 15px 16px 25px;
     width: 100%;
     vertical-align: top;
     background: #2b2b2b;

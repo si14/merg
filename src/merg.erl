@@ -69,11 +69,28 @@ post_merg(Config, AppFile) ->
         false -> ok
     end.
 
+post_clean(Config, _AppFile) ->
+    case is_base_dir() of
+        true ->
+            MergConf = rebar_config:get_local(Config, merg, []),
+            DocDir = proplists:get_value(doc_dir, MergConf, "doc_merg"),
+            true = is_list(DocDir),
+
+            rebar_file_utils:rm_rf(DocDir),
+            ok;
+        false ->
+            ok
+    end,
+    ok.
+
 merg_core(Config, _AppFile) ->
     true = is_base_dir(), %% this should be true because of skip_dir above
 
     MergConf = rebar_config:get_local(Config, merg, []),
     DocDir = proplists:get_value(doc_dir, MergConf, "doc_merg"),
+    true = is_list(DocDir),
+    ShouldWatch = proplists:get_value(watch, MergConf, true),
+    true = is_boolean(ShouldWatch),
 
     {ok, Cwd} = file:get_cwd(),
 
@@ -81,13 +98,13 @@ merg_core(Config, _AppFile) ->
     application:start(sasl),
     true = code:add_patha("ebin"),
     ok = application:start(merg),
-    RootSupRef = erlang:monitor(process, whereis(merg_sup)),
 
     Apps = rebar_config:get_global(merg_apps, []),
     [begin
-         AppDocDir = filename:join([Cwd, DocDir, atom_to_list(App#app.name)]),
+         AppDocDir = filename:join([Cwd, DocDir,
+                                    atom_to_list(App#app.name)]) ++ "/",
          io:format("~p~n", [AppDocDir]),
-         ok = filelib:ensure_dir(AppDocDir ++ "/"),
+         ok = filelib:ensure_dir(AppDocDir),
          [begin
               Doc = merg_pygate:process(atom_to_binary(Mod#mod.name, utf8),
                                         Mod#mod.body),
@@ -98,25 +115,23 @@ merg_core(Config, _AppFile) ->
           end || Mod <- App#app.mods]
      end || App <- Apps],
 
+    case ShouldWatch of
+        true -> merg_watch();
+        false -> ok
+    end,
+    ok.
+
+merg_watch() ->
     io:format("waiting for application stop~n"),
+    RootSupRef = erlang:monitor(process, whereis(merg_sup)),
     receive
         {'DOWN', RootSupRef, _, _, _}=Msg ->
             io:format("Got ~p~n", [Msg])
     end,
-    io:format("application stopped"),
-    ok.
+    io:format("application stopped").
 
 is_base_dir() ->
     rebar_utils:get_cwd() == rebar_config:get_global(base_dir, undefined).
-
-post_clean(_Config, _AppFile) ->
-    case is_base_dir() of
-        true ->
-            io:format("I AM POST CLEAN");
-        false ->
-            ok
-    end,
-    ok.
 
 start(_StartType, _StartArgs) ->
     merg_sup:start_link().
