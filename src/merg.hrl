@@ -1,8 +1,13 @@
 -record(mod, {name     :: atom(),
-              path     :: string(),
+              app      :: atom(),
+              file     :: string(),
               body     :: binary(),
-              last_mod :: calendar:datetime()}).
+              last_mod :: integer()}).
 
--record(app, {name    :: atom(),
-              app_src :: string(),
-              mods    :: [string()]}).
+-record(app, {name         :: atom(),
+              dir          :: string(),
+              file         :: string(),
+              description  :: string(),
+              applications :: [atom()],
+              version      :: string(),
+              last_mod     :: integer()}).
