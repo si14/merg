@@ -39,20 +39,15 @@ handle_call({init, DocDir, RawApps, ShouldWatch}, _From, State) ->
     ets:insert(merg_apps, Apps),
     ets:insert(merg_mods, Mods),
     AppNames = [A#app.name || A <- Apps],
-    ModNames = [M#mod.name || M <- Mods],
     render_apps(DocDir, AppNames),
-    render_mods(DocDir, ModNames),
+    render_mods(DocDir, Mods),
     case ShouldWatch of
         false -> ok;
         true ->
             [begin
                  Delay = trunc(?RESCAN_DELAY * (1 + random:uniform())),
-                 erlang:send_after(Delay, self(), {rescan_app, A})
-             end || A <- AppNames],
-            [begin
-                 Delay = trunc(?RESCAN_DELAY * (1 + random:uniform())),
-                 erlang:send_after(Delay, self(), {rescan_mod, M})
-             end || M <- ModNames]
+                 erlang:send_after(Delay, self(), {rescan_mod, M#mod.name})
+             end || M <- Mods]
     end,
     {reply, ok, State#state{doc_dir=DocDir}};
 handle_call(_Request, _From, State) ->
@@ -64,12 +59,12 @@ handle_cast(_Msg, State) ->
 
 handle_info({rescan_app, _A}, State) ->
     {noreply, State};
-handle_info({rescan_mod, M}=Msg, #state{doc_dir=DocDir}=State) ->
-    [Mod] = ets:lookup(merg_mods, M),
+handle_info({rescan_mod, ModName}=Msg, #state{doc_dir=DocDir}=State) ->
+    [Mod] = ets:lookup(merg_mods, ModName),
     Lastmod = lastmod(Mod#mod.file),
     case Lastmod > Mod#mod.last_mod of
         true ->
-            render_mod(DocDir, M),
+            render_mod(DocDir, Mod),
             ets:insert(merg_mods, Mod#mod{last_mod=Lastmod});
         false ->
             ok
@@ -124,11 +119,10 @@ render_apps(DocDir, Apps) ->
 render_app(_DocDir, AppName) ->
     io:format("rendering app: ~p [STUB]~n", [AppName]).
 
-render_mods(DocDir, Mods) -> %% mods instead of names? FIXME(Dmitry)
+render_mods(DocDir, Mods) ->
     [render_mod(DocDir, M) || M <- Mods].
 
-render_mod(DocDir, ModName) ->
-    [Mod] = ets:lookup(merg_mods, ModName),
+render_mod(DocDir, Mod) ->
     [App] = ets:lookup(merg_apps, Mod#mod.app),
     AppDocDir = filename:join([rebar_utils:get_cwd(), DocDir,
                                atom_to_list(App#app.name)]) ++ "/",
