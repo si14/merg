@@ -1,1 +1,1 @@
-Rebar plugin for generating docco-style documentation on the fly
+Rebar plugin for generating docco-style documentation on the fly ([work in progress](http://i.imgur.com/ng3JH.png)).
