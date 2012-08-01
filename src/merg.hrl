@@ -11,3 +11,8 @@
               applications :: [atom()],
               version      :: string(),
               last_mod     :: integer()}).
+
+-record(merg, {watch=false        :: boolean(),
+               serve=false        :: boolean(),
+               serve_port=8081    :: pos_integer(),
+               doc_dir="doc_merg" :: string()}).

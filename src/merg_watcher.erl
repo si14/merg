@@ -138,6 +138,6 @@ lastmod(File) ->
     DT = filelib:last_modified(File),
     calendar:datetime_to_gregorian_seconds(DT).
 
-greg_now() ->
-    {MegaSecs, Secs, _} = erlang:now(),
-    ?EPOCH_START + MegaSecs * 1000000 + Secs.
+%% greg_now() ->
+%%     {MegaSecs, Secs, _} = erlang:now(),
+%%     ?EPOCH_START + MegaSecs * 1000000 + Secs.

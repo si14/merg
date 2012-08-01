@@ -57,9 +57,14 @@ merg_core(Config, _AppFile) ->
     application:start(sasl),
     true = code:add_patha("ebin"), %% FIXME(Dmitry): eliminate this
     true = code:add_patha("deps/inotify/ebin"),
+    true = code:add_patha("deps/cowboy/ebin"),
+
     ok = application:start(inotify),
+    ok = application:start(cowboy),
     ok = application:start(merg),
+
     merg_watcher:watch(DocDir, RawApps, ShouldWatch),
+    merg_web:start(get_config(MergConf)), %% FIXME(Dmitry): dirty
 
     case ShouldWatch of
         true -> merg_wait();
@@ -84,3 +89,14 @@ start(_StartType, _StartArgs) ->
 
 stop(_State) ->
     ok.
+
+get_config(Config) ->
+    Watch = proplists:get_value(watch, Config, false),
+    Serve = proplists:get_value(serve, Config, false),
+    ServePort = proplists:get_value(serve_port, Config, 8081),
+    DocDir = proplists:get_value(doc_dir, Config, "doc_merg"),
+
+    #merg{watch=Watch,
+          serve=Serve,
+          serve_port=ServePort,
+          doc_dir=DocDir}.
